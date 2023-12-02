@@ -51,8 +51,8 @@ ota:
 mqtt:
   broker: 192.168.2.6
   port: 1883
-  username: "mqtt"
-  password: "mqtt001"
+  username: !secret mqtt_local_user
+  password: !secret mqtt_local_pass
   topic_prefix: ${topic_prefix}
    
 web_server:

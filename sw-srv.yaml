@@ -24,8 +24,8 @@ mqtt:
   # broker: 94.131.11.110
   broker: 192.168.2.6
   port: 1883
-  username: "mqtt"
-  password: "mqtt001"
+  username: !secret mqtt_local_user
+  password: !secret mqtt_local_pass
   topic_prefix: esphome/devices/${dev_name}
 
 ota:

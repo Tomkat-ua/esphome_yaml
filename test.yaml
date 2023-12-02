@@ -22,8 +22,8 @@ esp8266:
 mqtt:
   broker: 94.131.11.110
   port: 1884
-  username: "mqtt"
-  password: "mqtt001"
+  username: !secret mqtt_local_user
+  password: !secret mqtt_local_pass
   topic_prefix: ${topic_prefix}
   # log_topic: ${topic_prefix}/logs
 
