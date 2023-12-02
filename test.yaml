@@ -1,0 +1,145 @@
+substitutions:
+  dev_name: esp-test
+  topic_prefix: test/${dev_name}
+  # v2_power_counter: 98765,32
+
+# globals:
+#    - id: v_power_counter
+#      type: float
+#      restore_value: yes
+#      initial_value: '1234567.234'
+
+esphome:
+  name: ${dev_name}
+  # sp8266_restore_from_flash: true
+esp8266:
+  board: d1_mini
+  restore_from_flash: True
+
+# preferences:
+#   flash_write_interval: 0s
+
+mqtt:
+  broker: 94.131.11.110
+  port: 1884
+  username: "mqtt"
+  password: "mqtt001"
+  topic_prefix: ${topic_prefix}
+  # log_topic: ${topic_prefix}/logs
+
+
+# # Enable logging
+logger:
+  level: DEBUG
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+web_server:
+  port: 80
+  version: 1
+  
+# # Enable Home Assistant API
+# # api:
+# #   encryption:
+# #     key: "cRsabRxkkLv1JK4KxcAguTCoJhxXhlQIBnBtXokM3Rw="
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.110
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+
+#   # Enable fallback hotspot (captive portal) in case wifi connection fails
+#   # ap:
+#   #   ssid: "Test Fallback Hotspot"
+#   #   password: "XCu6ebATw8xw"
+
+# # captive_portal:
+# ##########################################################################
+ ######## test read MQTT topic
+
+# sensor:
+#   - platform: mqtt_subscribe
+#     name: "test Sensor"
+#     topic: "test/topic"
+#     state_topic: "test/state_topic"
+#     unit_of_measurement: v
+#     # value_template: "{{ value }}"
+
+
+spi:
+  miso_pin: D0
+  clk_pin: D1
+
+sensor:
+  - platform: max6675
+    name: "Temperature"
+    cs_pin: D2
+    update_interval: 1s
+
+ #######   
+
+# sensor:
+ 
+  
+#   # - platform: template
+#   #   name: "Power Counter"
+#   #   lambda: return id(ctr).state += 1.3426 ;
+#   #   # lambda: return ${v2_power_counter} +=1.2
+#   #   update_interval: 1s
+
+#   # - platform: mqtt_subscribe
+#   #   name: "counter_start"
+#   #   id: ctr
+#   #   # topic: monitors/em1/sensor/em1_energy/state
+#   #   topic: test/esp-test/counter_start
+
+# #--------------------------------
+#   - platform: mqtt_subscribe
+#     name: "Your Sensor"
+#     state: "test/esp-test/counter_state"
+#     unit_of_measurement: "kwh"
+#     value_template: "{{ value }}"
+    
+#   # - platform: template
+#   #   name: "Your Sensor Template"
+#   #   unit_of_measurement: "Your Unit of Measurement"
+#   #   icon: "mdi:your_icon"
+#   #   update_interval: 60s
+#   #   lambda: |-
+#   #     auto sensor = id(your_sensor);
+#   #     auto template_sensor = id(your_sensor_template);
+#   #     if (id(mqtt).has_state()) {
+#   #       // Якщо є стан MQTT, встановіть значення сенсора на останнє отримане значення
+#   #       auto value = id(mqtt).state;
+#   #       if (sensor.has_value() && value != sensor) {
+#   #         sensor = value;
+#   #       }
+#   #     } else {
+#   #       // Встановіть значення сенсора за замовчуванням, якщо MQTT не має стану
+#   #       sensor = 0.0;
+#   #     }
+#   #     return {sensor};
+
+
+
+
+# # sensor:
+# #   - platform: mqtt
+# #     name: "Ваш сенсор"
+# #     state_topic: "mqtt_topic"
+# #     unit_of_measurement: "Ваша одиниця виміру"
+# #     value_template: "{{ value }}"
+# #     on_boot:
+# #       - mqtt.subscribe:
+# #           topic: "mqtt_topic"
+
+
+
+

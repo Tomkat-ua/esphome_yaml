@@ -1,0 +1,186 @@
+substitutions:
+  dev_name: ky-d1mini-001
+  # up_interval_fast: 1000ms
+  # up_interval_slow: 100s
+  
+esphome:
+  name:  ${dev_name}
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.31
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  ap:
+    ssid: d1
+    password: ddddd_232323
+  domain: .local
+    
+
+captive_portal:
+
+# Enable logging
+logger:
+ # level: INFO
+
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+ota:
+  password: "EspAdminn"
+
+web_server:
+  port: 80
+
+# deep_sleep:
+#   run_duration: 10min
+#   sleep_duration: 30min
+
+# status_led:
+#   pin:
+#     number: D4
+#     inverted: yes
+
+  
+#####################################
+###
+i2c:
+  sda: D2
+  scl: D1
+  scan: false
+  id: bus_a
+  #0x23
+###
+
+
+# dallas:
+#   - pin: D5    
+# #0x670315511825FF28
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+#--- PUMP -------------------
+  # Управление реле по таймеру
+  - platform: gpio
+    name: ${dev_name}_pump
+    pin: D4
+    id: relay_1
+    inverted: true
+    on_turn_on:
+      - delay: 10s
+      - switch.turn_off: relay_1
+
+## RF SW--------------------
+  - platform: gpio
+    pin: D3
+    name: ${dev_name}_RF_Power
+    id: relay_2 
+    inverted: false
+    on_turn_on:
+      - delay: 150ms
+      - switch.turn_off: relay_2
+
+
+#---------------------------    
+#---------------------------    
+sensor:
+# #---- Dallas ----------------
+#   - platform: dallas
+#     address: 0x670315511825FF28
+#     name: "${dev_name}_Dallas"
+
+# ---- bh1750 -------------------
+  - platform: bh1750
+    name: ${dev_name}_Illuminance
+    address: 0x23
+    measurement_time: 69
+    update_interval: 10s  
+ 
+#----Uptime------------------
+  - platform: uptime
+    name: ${dev_name}_uptime
+
+#----Wi-Fi-------------------
+  - platform: wifi_signal
+    name: ${dev_name}_wifi_signal
+    update_interval: 30s
+    
+#--- Soil Humidity ----------
+  - platform: adc
+    pin: A0
+    id: humidity_sensor
+    name: ${dev_name}_Soil_Humidity
+    filters:
+      - lambda: |-
+          if (x > 0.71) {
+          return 0;
+          } else if (x < 0.267) {
+          return 100;
+          } else {
+          return (0.71-x) / (0.71-0.267) * 100.0;
+          }
+    unit_of_measurement: "%"      
+    update_interval: 60s
+    
+#-- DHT22 -------------------------------------
+  - platform: dht
+    pin: D5
+    temperature:
+      name: ${dev_name}_Room_Temperature
+    humidity:
+      name: ${dev_name}_Room_Humidity
+    model: DHT22  
+    update_interval: 60s  
+
+
+#---------------------------
+  - platform: pulse_counter
+    id: water_pulse
+    pin: D6
+    internal: true
+    name: "Pulse Counter"
+    update_interval: 1s
+    filters:
+      lambda: |-
+        static float total_pulses = 0.0;
+        total_pulses += x * 1 / 60.0;
+        id(lifetime_counter).publish_state(total_pulses / 4.68/1000);
+        return x ;
+        
+  - platform: template
+    id: lifetime_counter
+    name: "${dev_name}_Water_Total"
+    unit_of_measurement: "L"
+    accuracy_decimals: 3
+    
+  - platform: template
+    name: "${dev_name}_Water_Flow_Rate"
+    id: water_flow_rate
+    accuracy_decimals: 2
+    unit_of_measurement: "L/min"
+    icon: "mdi:water"
+    lambda: return (id(water_pulse).state /4.68/1000);
+    update_interval: 3s
+#-------------------------------------------------------------------    
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version    
+    
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+    ssid:
+      name: ${dev_name}_SSID
+    # bssid:
+    #   name: ${dev_name}_BSSID
+    mac_address:
+      name: ${dev_name}_mac_wifi
+      
+

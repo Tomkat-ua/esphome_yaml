@@ -1,0 +1,226 @@
+substitutions:
+  dev_name: em1
+  topic_prefix: esphome/devices/${dev_name}
+  update_interval: 15s
+
+globals:
+  - id: start_counter
+    type: float
+    restore_value: yes
+    initial_value: '26667.00'
+  - id: k_counter
+    type: float
+    restore_value: yes
+    initial_value: '1000'
+
+esphome:
+  name: ${dev_name}
+  friendly_name: "em1"
+
+esp8266:
+  board: d1_mini
+  restore_from_flash: True
+
+# Enable logging
+logger:
+  level: DEBUG
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid_kr
+  password: !secret wifi_ssid_password_kr
+  manual_ip:
+    static_ip: 192.168.1.142
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+    dns1: 192.168.1.1
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "EM1 Fallback Hotspot"
+    password: "fMx234545U"
+
+captive_portal:
+
+mqtt:
+  broker: 94.131.11.110
+  port: 1883
+  username: !secret mqtt_user
+  password: !secret mqtt_password
+  topic_prefix: ${topic_prefix}
+
+web_server:
+  port: 80
+  version: 1
+
+text_sensor:
+  - platform: version
+    name: version
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kremenchuk"};
+    update_interval: 60s
+  
+binary_sensor:
+  - platform: status
+    name: "status"  
+##------------------
+uart:
+  id: mon_uart
+  rx_pin: D3
+  tx_pin: D4 
+  baud_rate: 9600
+
+modbus:
+
+sensor:
+  - platform: pzemac
+    current:
+      name: "Current"
+      id: current
+    voltage:
+      name: "Voltage"
+      id: voltage
+    energy:
+      name: "Energy"
+      id: energy
+    power:
+      name: "Power"
+      id: power_mon
+    frequency:
+      name: "Frequency"
+    power_factor:
+      name: "Factor"
+    update_interval: ${update_interval}
+
+  - platform: template
+    name: "Energy Counter"
+    id: energy_counter
+    lambda: |-
+       return { ((id(energy).state ) / id(k_counter)) +  id(start_counter) };
+    unit_of_measurement: kWh
+    device_class: energy
+    icon: mdi:lightning-bolt
+    accuracy_decimals: 2
+    update_interval: ${update_interval}  
+
+switch:
+  - platform: uart
+    uart_id: mon_uart
+    name: "Reset"
+    data: [0x01, 0x42, 0x80, 0x11]
+    
+  - platform: restart
+    name: restart   
+
+
+ 
+  
+# #####################################################
+# # i2c:
+# #   sda: D1
+# #   scl: D2
+# #   scan: true
+# #   id: bus_a
+# #   # 0x3C
+  
+# # # -- Display ----------------
+
+# # font:
+# #   - file: ./fonts/geometria/geometria-bold.ttf 
+# #     id: font1
+# #     size: 15
+# #   - file: ./fonts/geometria/geometria.ttf 
+# #     id: font2
+# #     size: 15
+
+# # display:
+# #   - platform: ssd1306_i2c
+# #     model: "SSD1306 128x64"
+# #     update_interval: 100ms
+# #     rotation: 270
+# #     address: 0x3C
+# #     lambda: |-
+# #       it.printf(0, 0,  id(font1), "1:%.0f V",id(voltage1).state);      
+# #       it.printf(0, 35, id(font1), "2:%.0f V",id(current1).state); 
+# # # ------------
+# #     #  it.printf(50, 10,  id(font1), "%.0f Wh",id(energy2).state);
+# #     #  it.printf(0, 12, id(font2), "I: %.000f A",id(current).state);
+# #     #  it.printf(50, 0, id(font1), "E: %.0f kW/h",id(energy).state);      
+# # #it.printf(0, 20, id(font2), "Hum: %.0f%% ,t: %.0f °C", id(humidity_sensor).state,id(temp).state); 
+# # # -------------
+# # ##########
+# uart:
+#   id: mon_uart
+#   rx_pin: D3 # white -> TX
+#   tx_pin: D4 # green -> RX
+#   baud_rate: 9600
+
+# # modbus:
+
+# sensor:
+#   - platform: pzemac
+#     current:
+#       name: "Current"
+#       id: current
+#     voltage:
+#       name: "Voltage"
+#       id: voltage
+#     energy:
+#       name: "Energy"
+#       id: energy
+#     power:
+#       name: "Power"
+#       id: power_mon
+#     frequency:
+#       name: "Frequency"
+#     power_factor:
+#       name: "Factor"
+#     update_interval: 10s  
+#     address: 1 #248
+      
+#   - platform: integration
+#     name: "Energy Meter" 
+#     sensor: energy #power_mon
+#     time_unit: h
+#     filters:
+#       # Multiplication factor from W to kW is 0.001
+#       - lambda: return x * (0.001) + 26578.4;
+#     unit_of_measurement: kWh
+#     device_class: energy
+#     icon: mdi:lightning-bolt
+#     restore: true 
+      
+#   - platform: total_daily_energy
+#     name: "Total Daily Energy"
+#     device_class: energy
+#     icon: mdi:lightning-bolt
+#     power_id: power_mon
+#     filters:
+#       - multiply: 0.001
+#     accuracy_decimals: 2
+#     unit_of_measurement: kWh
+#     # icon: mdi:counter 
+
+#   # - platform: template
+#   #   name: "Power Counter"
+#   #   lambda: return id(energy1).state /1000 + 26438 ;
+#   #   update_interval: 10s
+#   #   unit_of_measurement: kWh
+
+
+
+        

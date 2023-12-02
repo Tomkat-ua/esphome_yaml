@@ -1,0 +1,31 @@
+esphome:
+  name: s2-mini
+  friendly_name: s2_mini
+
+esp32:
+  board: esp32-s2-saola-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "DKBlr7PNsygypD5ZWmgqCTPvEV91oxAjaG9vHxM4Vno="
+
+ota:
+  password: "EspAdminn"
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "S2-Mini Fallback Hotspot"
+    password: "oe3ozJ3uTKxb"
+
+captive_portal:
+    

@@ -1,0 +1,273 @@
+substitutions:
+  dev_name: meteo1
+  topic_prefix: esphome/devices/${dev_name}
+
+# external_components:
+# #   # - source:
+# #   #     type: local
+# #   #     path: ./.esphome/external_components
+# #   # - source: github://dentra/esphome-components
+# #   #   components: [xiaomi_mccgq02hl]
+# #   # https://github.com/dentra/esphome-components/tree/master/components/miot_mccgq02hl
+# #   # - source: github://dentra/esphome-components
+#   - source: github://adamklis/esphome
+#     components: [xiaomi_ble]
+
+esphome:
+  name: ${dev_name}
+  friendly_name: ${dev_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino  
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.100
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+
+
+captive_portal:
+
+logger:
+  level: INFO
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+  
+
+# api:
+#   encryption: 
+#     key: 'AkivcHZacp4LXoLjl2q5WQC7lMOc7YNZWnlOFRVc0B4='
+
+ota:
+  password: "EspAdminn"
+
+
+mqtt:
+  broker: 192.168.2.6
+  port: 1883
+  username: "mqtt"
+  password: "mqtt001"
+  topic_prefix: ${topic_prefix}
+   
+web_server:
+  port: 80
+  version: 1
+  
+
+text_sensor:
+  - platform: version
+    name: version
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kyiv"};
+    update_interval: 600s
+
+    
+remote_receiver:
+  id: rcvr
+  pin:
+    number: GPIO5
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  dump: nec
+  on_nec:
+   then:
+    - if:
+        condition:
+          - lambda: 'return (x.address != 0x0);'
+        then: 
+        # - sensor.template.publish:
+        #       id: button_address
+        #       state: !lambda |-
+        #        return {x.address};
+        # - sensor.template.publish:
+        #       id: button_command
+        #       state: !lambda |-
+        #        return {x.command};
+        - sensor.template.publish:
+              id: button_code
+              state: !lambda |-
+               return {x.address + x.command};
+
+
+
+#####################################################
+dallas:
+ - pin: GPIO23
+   update_interval: 60s
+
+# esp32_ble_tracker:
+
+# xiaomi_ble:  
+
+# # i2c:
+# #   sda: GPIO32 # Yellow
+# #   scl: GPIO33 # Gray
+# #   scan: false
+# #   id: bus_a  
+# # # BME280: 0x76
+# # # display 0x3c
+  
+sensor:
+  - platform: template
+    name: "Button code"
+    id: button_code
+    update_interval: 300ms
+    accuracy_decimals: 0
+    retain: false
+  # - platform: template
+  #   name: "Button address"
+  #   id: button_address
+  #   update_interval: 300ms
+    
+  # - platform: template
+  #   name: "Button command"
+  #   id: button_command
+  #   update_interval: 300ms 
+
+  - platform: uptime
+    name: uptime
+    update_interval: 10s
+    id: up
+
+  # - platform: atc_mithermometer
+  #   mac_address: A4:C1:38:98:E1:03
+  #   temperature:
+  #     name: "atc-temperature"
+  #     unit_of_measurement: "°C"
+  #     device_class: "temperature"      
+  #     id: atc_temp
+  #     filters:
+  #     - lambda: |-
+  #         return x * 0.97411;          
+  #   humidity:
+  #     name: "atc-humidity"
+  #     unit_of_measurement: "%"
+  #     device_class: "humidity"
+  #     id: atc_hm
+  #   battery_level:
+  #     name: "atc-battery-level"
+  #   battery_voltage:
+  #     name: "atc-battery-voltage"
+  #   signal_strength:
+  #     name: "atc-signal"
+
+  # - platform: bme280
+  #   temperature:
+  #     name: "bme280-temperature"
+  #     unit_of_measurement: "°C"
+  #     device_class: "temperature"
+  #     oversampling: 16x
+  #     id: bme_temp
+  #     filters:
+  #     - lambda: |-
+  #         return x * 1.013;    
+  #   pressure:
+  #     name: "bme280-pressure"
+  #     unit_of_measurement: "mmHg"
+  #     device_class: "pressure"
+  #     id: bme_pr
+  #     filters:
+  #     - lambda: |-
+  #         return x * 0.75;     
+  #   humidity:
+  #     name: "bme280-humidity"
+  #     id: bme_hm
+  #   address: 0x76
+  #   update_interval: 10s
+
+  - platform: dallas
+    address: 0x01a23e7f0e64ff28
+    name: "body-temperature"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    id: dls_temp
+    # filters:
+    #   - lambda: |-
+    #       return x * 0.89;   
+
+  # - platform: template
+  #   name: "${dev_name}_door_sensor_alarm"
+  #   lambda: |-
+  #     if (id(door2_sensor).state) { return 1; } else { return 0; }
+  #   accuracy_decimals: 0  
+  #   update_interval: 1s      
+  # - platform: template
+  #   name: "${dev_name}_door_light"
+  #   accuracy_decimals: 0 
+  #   lambda: |-
+  #     if (id(door2_light).state) { return 1; } else { return 0; }
+  #   update_interval: 5s  
+  # - platform: template
+  #   name: "${dev_name}_door_alert"
+  #   accuracy_decimals: 0 
+  #   lambda: |-
+  #     if (id(door2_alert).state) { return 1; } else { return 0; }
+  #   update_interval: 1s      
+
+
+# #Mi Door and Window Sensor 2 - MCCGQ02HL
+# binary_sensor:
+#   - platform: miot_mccgq02hl
+#     mac_address: "E4:AA:EC:38:C3:09"
+#     bindkey: "c7cb5c067c390c7f37e6e469eb9f07bb"
+#     name: "door_sensor_str"
+#     id: door2_sensor
+#     light:
+#       name: "door_light_str"
+#       id: door2_light
+#     alert:
+#       name: "door_alert_str"
+#       id: door2_alert
+#     battery_level:
+#       name: "door_battery_level"
+#       unit_of_measurement: "%"
+#     battery_voltage:
+#       name: "door_battery_voltage"
+#       unit_of_measurement: "v"
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+
+      
+# font:
+#   - file: ./fonts/geometria/geometria.ttf 
+#     id: font1
+#     size: 9
+#   - file: ./fonts/geometria/geometria.ttf 
+#     id: font2
+#     size: 13
+
+# display:
+#   - platform: ssd1306_i2c
+#     model: "SSD1306 128x64"
+#     update_interval: 100ms
+#     rotation: 90
+#     address: 0x3C
+#     lambda: |-
+#       it.printf(0, 0,  id(font2), "OT: %.0f°C",id(bme_temp).state);
+#       it.printf(0, 20, id(font2), "OH: %.0f%%",id(bme_hm).state);
+#       it.printf(0, 40, id(font2), "OP: %.0f mm",id(bme_pr).state);    
+#       it.printf(0, 60, id(font2), "BT: %.0f°C",id(dls_temp).state);
+#       it.printf(0, 80, id(font2), "IT: %.0f°C",id(atc_temp).state);
+#       it.printf(0, 100, id(font2),"IH: %.0f%%",id(atc_hm).state);
+#       it.printf(0, 115, id(font1),"upt:%.0fs",id(up).state);     
+
+    

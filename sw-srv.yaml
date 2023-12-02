@@ -1,0 +1,95 @@
+substitutions:
+  dev_name: sw-srv
+
+esphome:
+  name: ${dev_name}
+  friendly_name: ${dev_name}
+
+esp8266:
+ board: d1_mini
+
+# Enable logging
+logger:
+
+web_server:
+  port: 80
+  version: 1
+  
+# Enable Home Assistant API
+# api:
+#   encryption:
+#     key: "fmdhbA/EzqyGtzzw3jJES6soNo6/GPab0qnR7QRPrg0="
+
+mqtt:
+  # broker: 94.131.11.110
+  broker: 192.168.2.6
+  port: 1883
+  username: "mqtt"
+  password: "mqtt001"
+  topic_prefix: esphome/devices/${dev_name}
+
+ota:
+  password: "EspAdminn"
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret  wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.101
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${dev_name}_Fallback Hotspot"
+    password: "sQb60YTYtDh4"
+
+captive_portal:
+    
+############################# ---------------------------------------
+
+text_sensor:
+  - platform: version
+    name: version
+
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kyiv"};
+    update_interval: 600s
+
+binary_sensor:
+  - platform: status
+    name: "status" 
+    id: status_id
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+  
+  - platform: gpio
+    name: ${dev_name}_relay1
+    pin: D5
+    id: relay1 
+    on_turn_on:
+      - delay: 300ms
+      - switch.turn_off: relay1
+
+  - platform: gpio
+    name: ${dev_name}_relay2
+    pin: D6
+    id: relay2 
+    on_turn_on:
+      - delay: 300ms
+      - switch.turn_off: relay2
+    inverted: false        
+status_led:
+  pin:
+    number: D4
+    inverted: true

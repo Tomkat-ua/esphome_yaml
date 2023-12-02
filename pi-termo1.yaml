@@ -1,0 +1,122 @@
+substitutions:
+  dev_name: pi-termo1
+  u_interval: 5s
+  add_temp: "0.2"
+esphome:
+  name: ${dev_name}
+
+esp8266:
+  board: d1_mini
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+web_server:
+  port: 80
+  version: 1 
+
+ota:
+  password: "2EspAdminn"
+
+wifi:
+  ssid: "netis_05BC22"
+  password: "password"
+  # ssid: !secret wifi_ssid_ky
+  # password: !secret wifi_ssid_password_ky
+  # manual_ip:
+  #   static_ip: 192.168.2.103
+  #   gateway: 192.168.2.1
+  #   subnet: 255.255.255.0
+  ap:
+    ssid: ${dev_name}-ap
+    password: ddddd_232323
+
+captive_portal:
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version        
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+      id: ip
+    ssid:
+      name: ${dev_name}_SSID
+    mac_address:
+      name: ${dev_name}_mac_wifi
+
+status_led:
+  pin:
+    number: D3
+    inverted: yes
+      
+dallas:
+ - pin: D4
+   update_interval: ${u_interval}   
+################################################
+# t1: 0x4182ea7f0e64ff28
+# t2: 0x1b9a297c0e64ff28
+# t3: 0x423d2b7f0e64ff28
+# t4: 0x65f0c9710e64ff28
+################################################
+
+sensor:
+#----Uptime------------------
+  - platform: uptime
+    name: ${dev_name}_uptime
+    update_interval: ${u_interval}
+#----Wi-Fi-------------------
+  - platform: wifi_signal
+    name: ${dev_name}_wifi_signal
+    id: wifi_level
+    update_interval: ${u_interval}
+
+##---------------------------------------------
+##---- Dallas --t1----100 cm----------
+  - platform: dallas
+    address: 0x4182ea7f0e64ff28
+    id: temp1
+    name: "${dev_name}_temp1"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    filters:
+      - lambda: |-
+          return x * 0.9605 + ${add_temp};          
+#--
+##---- Dallas --t2-----50 cm---------
+  - platform: dallas
+    address: 0x1b9a297c0e64ff28
+    id: temp2
+    name: "${dev_name}_temp2"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    filters:
+      - lambda: |-
+          return x * 0.9565 + ${add_temp};          
+#--
+##---- Dallas --t3------7 cm--------
+  - platform: dallas
+    address: 0x423d2b7f0e64ff28
+    id: temp3
+    name: "${dev_name}_temp3"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    filters:
+      - lambda: |-
+          return x * 0.9605 + ${add_temp};          
+#--
+##---- Dallas --t4-----Air---------
+  - platform: dallas
+    address: 0x65f0c9710e64ff28
+    id: temp4
+    name: "${dev_name}_temp4"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    filters:
+      - lambda: |-
+          return x * 0.944206009 ;          

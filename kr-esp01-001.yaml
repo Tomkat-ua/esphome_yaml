@@ -1,0 +1,144 @@
+substitutions:
+  dev_name: kr-esp01-001
+  
+esphome:
+  name: ${dev_name}
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: !secret wifi_ssid_kr
+  password: !secret wifi_ssid_password_kr
+  manual_ip:
+    static_ip: 192.168.1.32
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${dev_name} Fallback Hotspot"
+    password: !secret wifi_ap_password
+  domain: .localhome    
+captive_portal:
+
+web_server:
+  port: 80
+  version: 1
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+ota:
+  password: "EspAdminn"
+
+#remote_receiver:
+#  pin: 
+#    number: GPIO0
+#    inverted: True
+#    mode: INPUT_PULLUP
+#  dump: raw
+
+
+remote_transmitter:
+  pin: GPIO3
+  # Infrared remotes use a 50% carrier signal
+  carrier_duty_percent: 50%
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+    
+  - platform: template
+    name: ${dev_name}_button_power
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0x9768
+    
+  - platform: template  
+    name: ${dev_name}_button_night
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0xAF50
+    
+  - platform: template
+    name: ${dev_name}_button_lightup
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0xD52A
+    
+  - platform: template
+    name: ${dev_name}_button_lightdown
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0x3DC2
+  
+  - platform: template       
+    name: ${dev_name}_button_kplus
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0xF708
+  
+  - platform: template       
+    name: ${dev_name}_button_kminus
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0xD728
+
+  - platform: template
+    name: ${dev_name}_button_memory
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0xF50A
+    
+  - platform: template     
+    name: ${dev_name}_button_darklight
+    turn_on_action:
+     - remote_transmitter.transmit_nec:
+         address: 0x05ED
+         command: 0x35CA
+         
+#----------------------------------------------------------
+sensor:
+  - platform: uptime
+    name: ${dev_name}_uptime
+  
+  - platform: wifi_signal
+    name: ${dev_name}_wifi_signal
+    update_interval: 30s
+
+binary_sensor:
+  - platform: gpio
+    name: ${dev_name}_light
+    pin:
+     number: GPIO1
+     #mode: INPUT_PULLUP
+     inverted: False
+    device_class: light 
+ 
+#-------------------------------------------------
+    
+# status_led:
+#   pin:
+#     number: GPIO3
+#     inverted: no    
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version    
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+    ssid:
+      name: ${dev_name}_SSID
+    mac_address:
+      name: ${dev_name}_mac_wifi

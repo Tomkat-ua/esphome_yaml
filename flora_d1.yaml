@@ -1,0 +1,207 @@
+substitutions:
+  dev_name: flora02
+  u_interval: 15s
+  topic_prefix: esphome/devices/${dev_name}
+
+# esphome:
+#   name:  ${dev_name}
+#   platform: ESP8266
+#   board: d1_mini
+
+esphome:
+  name: ${dev_name}
+  friendly_name: ${dev_name}
+
+esp8266:
+  board: d1_mini
+
+# mdns:
+#   disabled: false
+  
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.103
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  ap:
+    ssid: ${dev_name}
+    password: !secret wifi_ap_password
+  domain: .local
+    
+
+captive_portal:
+
+logger:
+  level: DEBUG
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+# Enable Home Assistant API
+# api:
+#   # password: "EspAdminn"
+#   encryption:
+#     key: 'G90MIUI33VhARYr8sldXLm30BVsDAYPo0Uwg21PuIDE='
+
+mqtt:
+  broker: 192.168.2.6
+  port: 1883
+  username: "mqtt"
+  password: "mqtt001"
+  topic_prefix: ${topic_prefix}
+
+ota:
+  password: "EspAdminn"
+
+web_server:
+  port: 80
+  version: 1
+  # auth:
+  #   username: !secret web_server_user
+  #   password: !secret web_server_password
+#prometheus:  
+
+# deep_sleep:
+#   run_duration: 10min
+#   sleep_duration: 30min
+
+status_led:
+  pin:
+    number: D2
+    inverted: yes
+
+  
+#####################################
+###
+# i2c:
+#   scl: D1
+#   sda: D2
+#   scan: true
+#   id: bus_a
+#   #0x23 - bh1750
+#   #0x3C - display 
+###
+
+dallas:
+ - pin: D3
+   update_interval: ${u_interval} 
+# #0x670315511825FF28
+#---------------------------    
+sensor:
+#----Uptime------------------
+  - platform: uptime
+    name: uptime
+    update_interval: ${u_interval}
+#----Wi-Fi-------------------
+  - platform: wifi_signal
+    name: wifi_signal
+    id: wifi_level
+    update_interval: ${u_interval}
+
+# #---- Dallas ----------------
+  # - platform: dallas
+  #   address: 0x670315511825FF28
+  #   id: temp_raw
+  #   name: "soil_temperature_raw"
+
+  - platform: dallas
+    address: 0x670315511825FF28
+    id: temp
+    name: "soil_temperature"
+    filters:
+      - lambda: |-
+          return {x * 0.966};      
+
+  # - platform: template
+  #   name: "soil_temperature"
+  #   id: temp
+  #   update_interval: 300ms
+  #   accuracy_decimals: 2
+  #   # retain: false
+  #   filters:
+  #     - lambda: |-
+  #         return {id(temp_raw).state};          
+
+      
+# # ---- bh1750 -------------------
+  # - platform: bh1750
+  #   name: soil_illuminance
+  #   address: 0x23
+  #   i2c_id: bus_a
+  #   id: il
+  #   update_interval: 5s
+  # #   # measurement_duration: 69
+  # #   update_interval: ${u_interval}  
+
+ 
+#--- Soil Humidity ----------
+  - platform: adc
+    pin: A0
+    id: humidity_sensor
+    name: soil_humidity
+    device_class: humidity
+    filters:
+      - lambda: |-
+          if (x > 0.707031) {
+          return 0;
+          } else if (x < 0.258789) {
+          return 100;
+          } else {
+          return ((0.707031-x) / (0.707031-0.258789) * 100.0) ;
+          }
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+    update_interval: ${u_interval}
+    # state_topic: ${topic_prefix}/${dev_name}/humidity
+  # RAW--------
+  - platform: adc
+    pin: A0
+    id: humidity_sensor_raw
+    name: soil_humidity_raw
+    update_interval: ${u_interval}
+
+  
+# #-- Display ----------------
+
+# font:
+#   - file: ./fonts/geometria/geometria-bold.ttf 
+#     id: font1
+#     size: 15
+#   - file: ./fonts/geometria/geometria.ttf 
+#     id: font2
+#     size: 15
+
+# display:
+#   - platform: ssd1306_i2c
+#     model: "SSD1306 128x32"
+#     update_interval: 100ms
+#     rotation: 180
+#     address: 0x3C
+#     lambda: |-
+#       it.printf(0, 0, id(font2), "il: %.0f Lx",id(il).state);      
+#       it.printf(0, 20, id(font2), "Hum: %.0f%% ,t: %.0f °C", id(humidity_sensor).state,id(temp).state);      
+# #it.printf(0, 0, id(font2), "Wi-Fi: %.0fdB", id(wifi_level).state); 
+# #-------------------------------------------------------------------    
+
+text_sensor:
+  - platform: version
+    name: version    
+    
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+      id: ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kyiv"};
+    update_interval: 60s   
+switch:
+  - platform: restart
+    name: ${dev_name}_restart

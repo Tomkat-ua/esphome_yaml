@@ -1,0 +1,164 @@
+substitutions:
+  dev_name: smart-pump
+  topic_prefix: esphome/devices/${dev_name}
+  update_interval: 15s
+  update_interval_soil: 1s
+  gain_soil: '4.096'
+
+esphome:
+  name: ${dev_name}
+  friendly_name: ${dev_name}
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+  level: DEBUG
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+# Enable Home Assistant API
+# api:
+#   encryption:
+#     key: "0cfVb4e3h9Aare0WRpSz+4SW8m29ICORF806zLYoDvM="
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.104
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+    dns1: 192.168.2.1
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Smart-Pump Fallback Hotspot"
+    password: "9xuyC9pgfPDQ"
+
+captive_portal:
+
+mqtt:
+  broker: 192.168.2.6
+  port: 1883
+  username: mqtt
+  password: mqtt001
+  topic_prefix: ${topic_prefix}
+
+web_server:
+  port: 80
+  version: 1
+
+text_sensor:
+  - platform: version
+    name: version
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kyiv"};
+    update_interval: 60s
+  
+binary_sensor:
+  - platform: status
+    name: "status"  
+#---I2C-------------------------------------------
+i2c:
+  sda: D1
+  scl: D2   
+
+#---ADS-------------------------------------------
+ads1115:
+  - address: 0x48   
+#----------------------------------------      
+switch:
+  - platform: restart
+    name: restart
+  - platform: gpio
+    name: pump
+    pin: D3
+    id: pump   
+    # inverted: true
+    on_turn_on:
+      - delay: 10s
+      - switch.turn_off: pump
+
+sensor:
+#----Uptime------------------
+#   - platform: uptime
+#     name: uptime
+
+#   - platform: template
+#     id: lifetime_counter
+#     name: "water_total"
+#     unit_of_measurement: "L"
+#     accuracy_decimals: 3    
+# #--- Waterflow Sensor ----GPIO03_Yellow ---------------------
+#   - platform: pulse_counter
+#     id: water_counter
+#     pin: D2 
+#     internal: true
+#     name: "water_counter"
+#     update_interval: 1s
+#     filters:
+#       lambda: |-
+#         static float total_pulses = 0.0;
+#         total_pulses += x * 1 / 60.0;
+#         id(lifetime_counter).publish_state(total_pulses / 4.68/1000);
+#         return x ;
+
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: ${gain_soil}
+    resolution: 12 bits
+    name: "soil_0_raw"
+    id: soil_0_raw
+    update_interval: ${update_interval_soil}
+
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: ${gain_soil}
+    resolution: 12 bits
+    name: "soil_0"
+    update_interval: ${update_interval_soil}
+    unit_of_measurement: "%"
+    device_class: humidity
+    icon: mdi:water-percent
+    filters:
+      # 1.4 v = 100%
+      # 3.02 v = 0%
+      - lambda: |-
+          if (x >= 3.02) {
+          return 0;
+          } else if (x <= 1.4) {
+          return 100;
+          } else {
+          return ((3.02-x) / (3.02-1.4) * 100.0) ;
+          }
+
+  # - platform: ads1115
+  #   multiplexer: 'A1_GND'
+  #   gain: ${gain_soil}
+  #   name: "soil_1"
+  #   update_interval: ${update_interval_soil}
+  # - platform: ads1115
+  #   multiplexer: 'A2_GND'
+  #   gain: ${gain_soil}
+  #   name: "soil_2"
+  #   update_interval: ${update_interval_soil}
+  # - platform: ads1115
+  #   multiplexer: 'A3_GND'
+  #   gain: ${gain_soil}
+  #   name: "soil_3"
+  #   update_interval: ${update_interval_soil}

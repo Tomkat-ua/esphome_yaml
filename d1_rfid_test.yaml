@@ -1,0 +1,55 @@
+esphome:
+  name: d1_rfid_test
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.109
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  domain: .local
+  reboot_timeout: 0s 
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "D1 Rfid Test Fallback Hotspot"
+    password: "2UmASi06vpsP"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+ota:
+  password: "EspAdminn"
+
+web_server:
+
+#######################
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin: GPIO12
+  
+rc522_spi:
+  cs_pin: GPIO04
+  update_interval: 500ms
+  
+binary_sensor:
+  - platform: rc522
+    uid: 39-8C-C9-C1
+    name: "brelok Slava"
+    
+    
+  - platform: rc522
+    uid: 23-14-8F-03
+    name: "card Slava"
+    

@@ -1,0 +1,115 @@
+substitutions:
+  dev_name: therm-001
+  u_interval: 15s
+
+esphome:
+  name: ${dev_name}
+  platform: ESP8266
+  board: esp8285  
+  
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_password
+
+web_server:
+  port: 80
+  version: 1
+  
+prometheus:
+  include_internal: true
+
+mqtt:
+  broker: 192.168.2.127
+  port: 1883
+  username: mqtt
+  password: mqtt001
+  topic_prefix: tele/${dev_name}
+  
+
+ota:
+  password: "037e63c825860728c6ca397339878318"
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.153
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${dev_name} Fallback Hotspot"
+    password: !secret wifi_ap_password
+
+captive_portal:
+##################################################
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: no
+
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version    
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+    ssid:
+      name: ${dev_name}_SSID
+    mac_address:
+      name: ${dev_name}_mac_wifi
+      
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+  - platform: gpio
+    name: ${dev_name}_relay
+    pin: GPIO12
+    id: relay      
+
+dallas:
+ - pin: GPIO2
+   update_interval: ${u_interval} 
+
+sensor:    
+#----Uptime------------------
+  - platform: uptime
+    name: ${dev_name}_uptime
+    update_interval: ${u_interval}    
+
+# #---- Dallas ----------------
+  - platform: dallas
+    address: 0x0a062191a5760928
+    id: temp
+    device_class: "temperature"
+    name: "${dev_name}_Temperature"
+    filters:
+      - lambda: |-
+          return x * 1.015;          
+    on_value_range:
+      - below: 20.0
+        then:
+          - switch.turn_on: relay
+      - above: 40.0
+        # below: 30.0
+        then:
+          - switch.turn_off: relay
+      # - above: 10.0
+      #   then:
+      #     - switch.turn_on: relay_3      
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    name: ${dev_name}_button
+    on_press:
+      - switch.toggle: relay
+      

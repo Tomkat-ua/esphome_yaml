@@ -1,0 +1,87 @@
+substitutions:
+  dev_name: ky-esp01-001
+  
+esphome:
+  name: ${dev_name}
+  platform: ESP8266
+  board: esp01_1m
+  on_boot:
+    then:
+      - switch.turn_on: relay1  
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.32
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${dev_name} Fallback Hotspot"
+    password: !secret wifi_ap_password
+  domain: .local  
+captive_portal:
+
+web_server:
+  port: 80
+  version: 1
+
+# Enable logging
+logger:
+  #level: verbose
+  
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+ota:
+  password: "EspAdminn"
+
+
+
+         
+#----------------------------------------------------------
+sensor:
+  - platform: uptime
+    name: ${dev_name}_uptime
+  
+  - platform: wifi_signal
+    name: ${dev_name}_wifi_signal
+    update_interval: 30s
+
+#-------------------------------------------------
+binary_sensor:
+  - platform: gpio
+    pin: GPIO1
+    name:   ${dev_name}_PIR Sensor
+    device_class: motion
+    
+status_led:
+  pin:
+    number: GPIO2
+    inverted: True    
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version    
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+    ssid:
+      name: ${dev_name}_SSID
+    mac_address:
+      name: ${dev_name}_mac_wifi
+
+###########################################################
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+    
+  - platform: gpio
+    name: ${dev_name}_relay
+    pin: GPIO0
+    id: relay1
+    inverted: False 
+      

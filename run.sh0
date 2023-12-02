@@ -1,0 +1,12 @@
+docker pull esphome/esphome
+#docker pull esphome/esphome:2.6.0
+
+#docker run --rm --net=host -v "${PWD}":/config -it esphome/esphome
+
+#MAC
+#docker run --rm -p 6052:6052 -e ESPHOME_DASHBOARD_USE_PING=true -v "${PWD}":/config -it esphome/esphome
+
+docker container stop ESPHome
+docker container rm   ESPHome
+
+docker run -d --name ESPHome -p 6052:6052 -e ESPHOME_DASHBOARD_USE_PING=true -v "${PWD}":/config -it esphome/esphome

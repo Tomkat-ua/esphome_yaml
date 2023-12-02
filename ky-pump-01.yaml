@@ -1,0 +1,131 @@
+substitutions:
+  dev_name: ky-pump-01
+
+esphome:
+  name:  ${dev_name}
+  platform: ESP8266
+  board: esp01_1m
+  # on_boot:
+  #   then:
+  #     - switch.turn_on: relay1 
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.103
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+  ap:
+    ssid: d1
+    password: ddddd_232323
+  domain: .local
+    
+
+captive_portal:
+
+# Enable logging
+logger:
+ # level: INFO
+
+# Enable Home Assistant API
+api:
+  password: "EspAdminn"
+
+ota:
+  password: "EspAdminn"
+
+web_server:
+  port: 80
+  version: 1
+
+# deep_sleep:
+#   run_duration: 10min
+#   sleep_duration: 30min
+
+# status_led:
+#   pin:
+#     number: D4
+#     inverted: yes
+
+  
+#####################################
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+#--- PUMP -------------------
+  # Управление реле 
+  - platform: gpio
+    name: ${dev_name}_pump
+    pin: GPIO0
+    id: relay_1
+    inverted: true
+    on_turn_on:
+      - delay: 10s
+      - switch.turn_off: relay_1
+
+#---------------------------    
+sensor:
+
+#----Uptime------------------
+  - platform: uptime
+    name: ${dev_name}_uptime
+
+#----Wi-Fi-------------------
+  - platform: wifi_signal
+    name: ${dev_name}_wifi_signal
+    update_interval: 30s
+
+
+#--- Waterflow Sensor ----GPIO03_Yellow ---------------------
+  - platform: pulse_counter
+    id: water_pulse
+    pin: GPIO03 
+    internal: true
+    name: "Water Counter"
+    update_interval: 1s
+    filters:
+      lambda: |-
+        static float total_pulses = 0.0;
+        total_pulses += x * 1 / 60.0;
+        id(lifetime_counter).publish_state(total_pulses / 4.68/1000);
+        return x ;
+        
+  - platform: template
+    id: lifetime_counter
+    name: "${dev_name}_Water_Total"
+    unit_of_measurement: "L"
+    accuracy_decimals: 3
+    
+  - platform: template
+    name: "Water_Flow_Rate"
+    id: water_flow_rate
+    accuracy_decimals: 2
+    unit_of_measurement: "L/min"
+    icon: "mdi:water"
+    lambda: return (id(water_pulse).state /4.68/1000);
+    update_interval: 3s
+#-------------------------------------------------------------------    
+
+text_sensor:
+  - platform: version
+    name: ${dev_name}_version    
+  - platform: wifi_info
+    ip_address:
+      name: ${dev_name}_IP
+    ssid:
+      name: ${dev_name}_SSID
+    mac_address:
+      name: ${dev_name}_mac_wifi
+      
+## GPIO2 - YELLOW2
+## GPIO1 - ORANGE (TX)
+#---I2C-------------------------------------------
+i2c:
+  sda: GPIO2
+  scl: GPIO1   
+
+#---ADS-------------------------------------------
+ads1115:
+  - address: 0x48   
+

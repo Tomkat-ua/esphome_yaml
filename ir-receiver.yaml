@@ -1,0 +1,174 @@
+substitutions:
+  dev_name: ir-receiver
+  topic_prefix: esphome/devices/${dev_name}
+  update_interval: 15s
+
+esphome:
+  name: ${dev_name}
+  friendly_name: ${dev_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: INFO
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+# Enable Home Assistant API
+# api:
+#   encryption:
+#     key: "SWAxYCrvwJocqSryFjug/fYaADIxVmaEDj5yuAbSrzE="
+
+mqtt:
+  broker: 192.168.2.6
+  port: 1883
+  username: mqtt
+  password: mqtt001
+  topic_prefix: ${topic_prefix}
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid_ky
+  password: !secret wifi_ssid_password_ky
+  manual_ip:
+    static_ip: 192.168.2.105
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+    dns1: 192.168.2.1
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  # ap:
+  #   ssid: "Rf-Receiver Fallback Hotspot"
+  #   password: "ySkQBsVtOIPj"
+
+# captive_portal:
+
+web_server:
+  port: 80
+  version: 1
+
+text_sensor:
+  - platform: version
+    name: version
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+  - platform: template
+    name: "location"
+    lambda: |-
+      return {"Kyiv"};
+    update_interval: 60s
+
+  - platform: template
+    name: "Button code"
+    id: button_code
+    update_interval: 300ms
+
+  # - platform: template
+  #   name: "Button address"
+  #   id: button_address
+  #   update_interval: 300ms
+
+
+sensor: 
+  - platform: template
+    name: "Button address"
+    id: button_address
+    update_interval: 300ms
+    
+  - platform: template
+    name: "Button command"
+    id: button_command
+    update_interval: 300ms
+    
+
+remote_receiver:
+  id: rcvr
+  pin:
+    number: GPIO5
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  dump: nec
+  on_nec:
+   then:
+    - if:
+        condition:
+          - lambda: 'return (x.address != 0x0);'
+        then: 
+        - sensor.template.publish:
+              id: button_address
+              state: !lambda |-
+               return {x.address};
+        - sensor.template.publish:
+              id: button_command
+              state: !lambda |-
+               return {x.command};
+
+    - if:
+        condition:
+            - lambda: 'return (x.address == 0xFF00 and x.command == 0xBF40);'  
+        then:
+        - text_sensor.template.publish:
+            id: button_code
+            state: ok
+    - if:
+        condition:
+            - lambda: 'return (x.address == 0xFF00 and x.command == 0xB946);'  
+        then:
+        - text_sensor.template.publish:
+            id: button_code
+            state: up
+    - if:
+        condition:
+            - lambda: 'return (x.address == 0xFF00 and x.command == 0xEA15);'  
+        then:
+        - text_sensor.template.publish:
+            id: button_code
+            state: down
+    - if:
+        condition:
+            - lambda: 'return (x.address == 0xFF00 and x.command == 0xBB44);'  
+        then:
+        - text_sensor.template.publish:
+            id: button_code
+            state: left
+    - if:
+        condition:
+            - lambda: 'return (x.address == 0xFF00 and x.command == 0xBC43);'  
+        then:
+        - text_sensor.template.publish:
+            id: button_code
+            state: right
+
+
+            
+binary_sensor:
+  - platform: status
+    name: "status"  
+#----------------------------------
+  # - platform: remote_receiver
+  #   name: "bt_ok"
+  #   id: bt_ok
+  #   nec:
+  #     address: 0xFF00
+  #     command: 0xBF40
+
+
+switch:
+  - platform: restart
+    name: restart   
+
+

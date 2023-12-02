@@ -1,0 +1,93 @@
+substitutions:
+  dev_name: linnyk-test
+  u_interval: 15s
+  topic_prefix: esphome/devices/${dev_name}
+
+esphome:
+  name:  ${dev_name}
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  # ssid: !secret wifi_ssid_kr
+  # password: !secret wifi_ssid_password_kr
+  ssid: point2
+  password: tester1245
+  manual_ip:
+    static_ip: 192.168.1.170
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+  ap:
+    ssid: ${dev_name}
+    password: !secret wifi_ap_password
+  domain: .local
+
+captive_portal:
+
+logger:
+  level: DEBUG
+  logs:
+    mqtt.component: INFO
+    mqtt.client: ERROR
+
+# Enable Home Assistant API
+# api:
+#   # password: !secret api_password
+#   encryption:
+#     key: 'G90MIU53457348573458sdfsf0BVsDAYPo0Uwg21PuIDE='
+
+mqtt:
+  broker: 94.131.11.110
+  port: 1884
+  username: mqtt
+  password: mqtt001
+  topic_prefix: ${topic_prefix}
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+  version: 1
+  # auth:
+  #   username: !secret web_server_user
+  #   password: !secret web_server_password
+#prometheus:  
+
+# deep_sleep:
+#   run_duration: 10min
+#   sleep_duration: 30min
+
+status_led:
+  pin:
+    number: D2
+    inverted: yes
+
+# #-------------------------------------------------------------------    
+
+text_sensor:
+  - platform: version
+    name: version    
+    
+  - platform: wifi_info
+    ip_address:
+      name: wifi_ip
+      id: ip
+    ssid:
+      name: wifi_ssid
+    mac_address:
+      name: wifi_mac
+
+switch:
+  - platform: restart
+    name: ${dev_name}_restart
+ 
+  - platform: gpio
+    name: ${dev_name}_led1
+    pin: D5
+    id: led1 
+    # state_topic: ${topic_prefix}/led1
+    command_topic: ${topic_prefix}/led1/command
+    command_retain: false
+
+
